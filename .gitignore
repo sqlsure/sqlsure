@@ -1,0 +1,23 @@
+# large benchmark data — download from bird-bench.github.io / HF, never commit
+birddata/
+*.sqlite
+*.zip
+
+# environments & caches
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# local tooling
+.claude/settings.local.json
+.DS_Store
+
+# secrets — never commit
+.env
+.env.*
+
+# private strategy docs — never public
+private/

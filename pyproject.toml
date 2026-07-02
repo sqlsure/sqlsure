@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sqlsure"
+version = "0.1.0"
+description = "AI writes your SQL. sqlsure makes sure it's right — a deterministic semantic inspector that catches fan-out double-counting, summed averages, wrong join keys, and PII exposure before the query runs. Zero false alarms on 2,568 benchmark gold queries."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Tejus Arora", email = "iam.tejusarora@gmail.com" }]
+keywords = ["sql", "semantic-layer", "dbt", "text-to-sql", "linter", "data-quality", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Database",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "sqlglot>=30.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0"]
+
+[project.urls]
+Homepage = "https://sqlsure.ai"
+Repository = "https://github.com/sqlsure/sqlsure"
+Documentation = "https://github.com/sqlsure/sqlsure#readme"
+Issues = "https://github.com/sqlsure/sqlsure/issues"
+
+[project.scripts]
+sqlsure = "sqlsure.cli:main"
+
+[tool.setuptools]
+packages = ["sqlsure"]

@@ -1,0 +1,33 @@
+name: release
+# Publishes to PyPI via Trusted Publishing (OIDC) — no API token stored
+# anywhere. Trigger: publishing a GitHub Release.
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt build
+      - name: Gates must pass before anything ships
+        run: |
+          python tests/run_tests.py
+          python benchmarks/benchmark.py
+      - run: python -m build
+      - uses: actions/upload-artifact@v4
+        with: { name: dist, path: dist/ }
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi          # release approval gate in repo settings
+    permissions:
+      id-token: write          # the OIDC handshake — this replaces the token
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist/ }
+      - uses: pypa/gh-action-pypi-publish@release/v1

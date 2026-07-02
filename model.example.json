@@ -1,0 +1,39 @@
+{
+  "tables": {
+    "fct_encounters": {
+      "grain": ["encounter_id"],
+      "measures": {
+        "cost": "additive",
+        "avg_los": "non_additive"
+      }
+    },
+    "fct_patient_census": {
+      "grain": ["census_date", "unit_id"],
+      "measures": {
+        "occupied_beds": {
+          "additivity": "semi_additive",
+          "semi_additive_over": "census_date"
+        }
+      }
+    },
+    "dim_patient": {
+      "grain": ["patient_id"],
+      "sensitive": ["patient_name", "ssn", "date_of_birth"]
+    },
+    "dim_diagnosis": {
+      "grain": ["diagnosis_id"]
+    }
+  },
+  "joins": [
+    {
+      "left": "fct_encounters", "right": "dim_patient",
+      "cardinality": "many_to_one",
+      "keys": [["patient_id", "patient_id"]]
+    },
+    {
+      "left": "fct_encounters", "right": "dim_diagnosis",
+      "cardinality": "one_to_many",
+      "keys": [["encounter_id", "encounter_id"]]
+    }
+  ]
+}
