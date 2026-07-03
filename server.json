@@ -1,22 +1,23 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
   "name": "io.github.sqlsure/sqlsure",
-  "description": "Semantic inspector for SQL: deterministic pre-execution validation that catches fan-out double-counting, summed averages, wrong join keys, and PII exposure — with machine-actionable fix hints so agents self-repair. 0.1 ms per check, offline, never reads data.",
-  "status": "active",
+  "description": "Semantic SQL inspector: catches double-counting, wrong joins, PII exposure before execution.",
+  "version": "0.1.0",
   "repository": {
     "url": "https://github.com/sqlsure/sqlsure",
     "source": "github"
   },
-  "version_detail": {
-    "version": "0.1.0"
-  },
+  "websiteUrl": "https://sqlsure.ai",
   "packages": [
     {
-      "registry_name": "pypi",
-      "name": "sqlsure",
+      "registryType": "pypi",
+      "identifier": "sqlsure",
       "version": "0.1.0",
-      "runtime_hint": "python",
-      "runtime_arguments": [
+      "runtimeHint": "python",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
         {
           "type": "positional",
           "value": "-m",
@@ -28,12 +29,12 @@
           "description": "the MCP server module"
         }
       ],
-      "package_arguments": [
+      "packageArguments": [
         {
           "type": "named",
           "name": "--model",
           "description": "Path to semantic model JSON (or use --manifest with a dbt manifest.json)",
-          "is_required": true,
+          "isRequired": true,
           "format": "filepath"
         }
       ]
