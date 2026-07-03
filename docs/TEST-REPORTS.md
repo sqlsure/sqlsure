@@ -171,7 +171,27 @@ Spider audit (§9): **2,568 gold queries scanned, 45 candidates, 44
 confirmed real (43 annotation-gap symptoms + 1 proven wrong answer), 1
 unadjudicated, 0 spurious.**
 
-## 11. Scoreboard
+## 11. BIRD train-set audit (2026-07-03) — the contamination finding
+
+**What:** the same join-safety pass over all **9,428 gold queries** of the
+BIRD *training* set (69 databases) — the corpus text-to-SQL models are
+fine-tuned on. JSONs extracted via HTTP range requests (5 MB pulled from
+the 8.9 GB official zip).
+
+**Results:** 9,428/9,428 parsed. 9,560 joins: 75% FK-backed, **788
+unbacked (8.2% — 8× the dev set's rate)**, collapsing into **61 distinct
+defect clusters across 21 databases**. Headline: **8 flagged databases
+declare ZERO foreign keys** — including 34-table `mondial_geo` (181
+affected gold queries on one join pair alone). Schema-linking systems are
+being trained on schemas with no declared links.
+
+**Verification depth:** clustering + name-semantics + annotation-gap
+counts; candidates, not yet execution-confirmed (train DBs sit in a
+compressed nested zip; full download queued). The confirmed dev-set
+extraction bug (#37) is the natural prior. Report:
+[reports/bird-train-audit.md](reports/bird-train-audit.md).
+
+## 12. Scoreboard
 
 | Validation | Verdict |
 |---|---|
