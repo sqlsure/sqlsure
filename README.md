@@ -1,5 +1,10 @@
 # sqlsure
 
+[![CI](https://github.com/sqlsure/sqlsure/actions/workflows/ci.yml/badge.svg)](https://github.com/sqlsure/sqlsure/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/sqlsure)](https://pypi.org/project/sqlsure/)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/pypi/pyversions/sqlsure)](https://pypi.org/project/sqlsure/)
+
 **AI writes your SQL. sqlsure makes sure it's right.**
 
 A query can be perfectly valid, run without error, and return a number
@@ -84,6 +89,16 @@ where execution-accuracy is blind.
 
 When sqlsure can't verify something, it says "can't verify" — never "looks
 fine." Honest uncertainty is a feature.
+
+## Trust properties
+
+- **Deterministic** — same SQL + same rulebook = same verdict, always;
+  rules are dictionary lookups, auditable line by line
+- **Offline** — zero network calls; **your SQL never leaves your machine**
+- **No data access** — parses query *text*; never connects to a database
+- **No telemetry** — nothing collected, ever ([SECURITY.md](SECURITY.md))
+- **Supply chain** — releases ship exclusively via PyPI Trusted Publishing
+  (OIDC) from tagged commits with public CI runs; two runtime deps
 
 ## Where the rulebook comes from
 

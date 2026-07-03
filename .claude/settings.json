@@ -38,7 +38,14 @@
       "Bash(curl -sI --max-time 20 \"https://bird-bench.oss-cn-beijing.aliyuncs.com/train.zip\")",
       "Bash(curl -s --max-time 20 \"https://huggingface.co/api/datasets?author=birdsql&limit=30\")",
       "Bash(.venv/bin/python -c \"import json,sys; [print\\(d['id']\\) for d in json.load\\(sys.stdin\\)]\")",
-      "Bash(.venv/bin/python benchmarks/audit_bird.py --data birddata/train --report docs/reports/bird-train-audit.md)"
+      "Bash(.venv/bin/python benchmarks/audit_bird.py --data birddata/train --report docs/reports/bird-train-audit.md)",
+      "Bash(curl -s --max-time 15 http://sqlsure.ai/)",
+      "Bash(curl -s -o /dev/null -w \"blog post: %{http_code}\\\\n\" --max-time 15 http://sqlsure.ai/blog/bird-benchmark-wrong-gold/)",
+      "Bash(curl -s --max-time 15 http://sqlsure.ai/llms.txt)",
+      "Bash(curl -s -o /dev/null -w \"http://sqlsure.ai        → %{http_code}\\\\n\" --max-time 15 \"http://sqlsure.ai/?cachebust=$\\(date +%s\\)\")",
+      "Bash(curl -s -o /dev/null -w \"https://sqlsure.ai       → %{http_code} \" --max-time 15 \"https://sqlsure.ai/\")",
+      "Bash(curl -s -o /dev/null -w \"http://www.sqlsure.ai    → %{http_code}\\\\n\" --max-time 15 \"http://www.sqlsure.ai/\")",
+      "Bash(curl -sI --max-time 15 http://sqlsure.ai/)"
     ],
     "deny": [
       "Read(.env)",
