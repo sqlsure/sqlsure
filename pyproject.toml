@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sqlsure"
-version = "0.1.0"
+version = "0.1.1"
 description = "AI writes your SQL. sqlsure makes sure it's right — a deterministic semantic inspector that catches fan-out double-counting, summed averages, wrong join keys, and PII exposure before the query runs. Zero false alarms on 2,568 benchmark gold queries."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -113,3 +113,6 @@ fine." Honest uncertainty is a feature.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — adding rules and loaders
 
 Apache-2.0 · [sqlsure.ai](https://sqlsure.ai)
+
+<!-- mcp-name: io.github.sqlsure/sqlsure -->
+mcp-name: io.github.sqlsure/sqlsure

@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
   "name": "io.github.sqlsure/sqlsure",
   "description": "Semantic SQL inspector: catches double-counting, wrong joins, PII exposure before execution.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": {
     "url": "https://github.com/sqlsure/sqlsure",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "sqlsure",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "runtimeHint": "python",
       "transport": {
         "type": "stdio"

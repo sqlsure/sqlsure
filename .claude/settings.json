@@ -16,7 +16,17 @@
       "Bash(brew install *)",
       "Bash(mcp-publisher --version)",
       "Bash(mcp-publisher login *)",
-      "Bash(curl -s -o /dev/null -w \"sqlsure.github.io → HTTP %{http_code}\\\\n\" --max-time 15 https://sqlsure.github.io/)"
+      "Bash(curl -s -o /dev/null -w \"sqlsure.github.io → HTTP %{http_code}\\\\n\" --max-time 15 https://sqlsure.github.io/)",
+      "Bash(python3 -m venv /private/tmp/claude-501/-Users-tejusarora-aie-demo/86941770-a533-494f-b879-eced4c1e2e60/scratchpad/pypi-test)",
+      "Bash(/private/tmp/claude-501/-Users-tejusarora-aie-demo/86941770-a533-494f-b879-eced4c1e2e60/scratchpad/pypi-test/bin/pip install *)",
+      "Bash(/private/tmp/claude-501/-Users-tejusarora-aie-demo/86941770-a533-494f-b879-eced4c1e2e60/scratchpad/pypi-test/bin/sqlsure --model model.example.json)",
+      "Bash(mcp-publisher publish *)",
+      "Bash(curl -s -o /dev/null -w \"sqlsure.github.io: %{http_code}\\\\n\" --max-time 10 https://sqlsure.github.io/)",
+      "Bash(curl -s -o /dev/null -w \"sqlsure.ai \\(http\\): %{http_code}\\\\n\" --max-time 10 http://sqlsure.ai/)",
+      "Bash(.venv/bin/python -)",
+      "Bash(git tag *)",
+      "Bash(GIT_SSL_CAINFO=/etc/ssl/cert.pem git push origin v0.1.1)",
+      "Bash(gh release *)"
     ],
     "deny": [
       "Read(.env)",
