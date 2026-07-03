@@ -8,7 +8,15 @@
       "WebFetch(domain:github.com)",
       "Bash(git rm *)",
       "Bash(git checkout *)",
-      "Bash(git branch *)"
+      "Bash(git branch *)",
+      "Bash(GIT_SSL_CAINFO=/etc/ssl/cert.pem git push -f origin main)",
+      "Bash(curl -sv --max-time 10 https://github.com -o /dev/null)",
+      "Bash(curl -s https://pypi.org/pypi/sqlsure/json)",
+      "Bash(GIT_SSL_CAINFO=/etc/ssl/cert.pem git push -q)",
+      "Bash(brew install *)",
+      "Bash(mcp-publisher --version)",
+      "Bash(mcp-publisher login *)",
+      "Bash(curl -s -o /dev/null -w \"sqlsure.github.io → HTTP %{http_code}\\\\n\" --max-time 15 https://sqlsure.github.io/)"
     ],
     "deny": [
       "Read(.env)",
