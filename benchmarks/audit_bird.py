@@ -46,13 +46,17 @@ def load_schemas(path: Path) -> dict:
 
 
 def audit(data_dir: Path):
-    dbs = load_schemas(data_dir / "dev_tables.json")
-    rows = json.load(open(data_dir / "dev.json"))
+    import glob as _g
+    tables = next(iter(_g.glob(str(data_dir / "*tables.json"))))
+    questions = next(f for f in _g.glob(str(data_dir / "*.json")) if "tables" not in f)
+    dbs = load_schemas(Path(tables))
+    rows = json.load(open(questions))
 
     stats = Counter()
     candidates = {"unbacked": [], "cross_join": []}
 
-    for row in rows:
+    for qi, row in enumerate(rows):
+        row.setdefault("question_id", qi)
         db, sql, q = row["db_id"], row["SQL"], row["question"]
         schema = dbs.get(db)
         if schema is None:

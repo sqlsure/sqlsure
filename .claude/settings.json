@@ -26,7 +26,19 @@
       "Bash(.venv/bin/python -)",
       "Bash(git tag *)",
       "Bash(GIT_SSL_CAINFO=/etc/ssl/cert.pem git push origin v0.1.1)",
-      "Bash(gh release *)"
+      "Bash(gh release *)",
+      "Bash(curl -s --max-time 15 \"https://registry.modelcontextprotocol.io/v0/servers?search=sqlsure\")",
+      "Bash(curl -s -o /dev/null -w \"sqlsure.ai http: %{http_code}\\\\n\" --max-time 10 http://sqlsure.ai/)",
+      "Bash(curl -sL -o /dev/null -w \"github snapshot retry: %{http_code}\\\\n\" --max-time 90 \"https://web.archive.org/save/https://github.com/sqlsure/sqlsure\")",
+      "Bash(curl -s --max-time 30 \"http://archive.org/wayback/available?url=pypi.org/project/sqlsure/\")",
+      "Bash(curl -s -o /dev/null -w \"sqlsure.ai: %{http_code}\\\\n\" --max-time 10 http://sqlsure.ai/)",
+      "Bash(curl -sL -o /dev/null -w \"wayback \\(repo\\): %{http_code}\\\\n\" --max-time 90 \"https://web.archive.org/save/https://github.com/BernieGroenewald/SQLSure\")",
+      "Bash(curl -sL -o /dev/null -w \"sqlsure.github.io follows-redirect: %{http_code}\\\\n\" --max-time 10 https://sqlsure.github.io/)",
+      "Bash(curl -sL -o /dev/null -w \"sqlsure.github.io: %{http_code}\\\\n\" --max-time 10 https://sqlsure.github.io/)",
+      "Bash(curl -sI --max-time 20 \"https://bird-bench.oss-cn-beijing.aliyuncs.com/train.zip\")",
+      "Bash(curl -s --max-time 20 \"https://huggingface.co/api/datasets?author=birdsql&limit=30\")",
+      "Bash(.venv/bin/python -c \"import json,sys; [print\\(d['id']\\) for d in json.load\\(sys.stdin\\)]\")",
+      "Bash(.venv/bin/python benchmarks/audit_bird.py --data birddata/train --report docs/reports/bird-train-audit.md)"
     ],
     "deny": [
       "Read(.env)",
