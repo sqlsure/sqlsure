@@ -97,13 +97,18 @@ class SemanticModel:
 
     @classmethod
     def from_dict(cls, d: dict) -> "SemanticModel":
+        # identifiers are lowercased: unquoted SQL identifiers are
+        # case-insensitive, and the checker normalizes the same way
         m = cls()
         for name, spec in d.get("tables", {}).items():
+            name = name.lower()
             grain = spec.get("grain", [])
             if isinstance(grain, str):
                 grain = [grain]
+            grain = [g.lower() for g in grain]
             measures: dict[str, Measure] = {}
             for mname, mspec in spec.get("measures", {}).items():
+                mname = mname.lower()
                 if isinstance(mspec, str):
                     measures[mname] = Measure(mname, mspec)
                 else:
@@ -112,10 +117,10 @@ class SemanticModel:
                         mspec.get("additivity", ADDITIVE),
                         mspec.get("semi_additive_over"),
                     )
-            m.tables[name] = Table(name, grain, measures, set(spec.get("sensitive", [])))
+            m.tables[name] = Table(name, grain, measures,
+                                   {s.lower() for s in spec.get("sensitive", [])})
         for j in d.get("joins", []):
-            keys = [tuple(k) for k in j.get("keys", [])]
-            m.joins[(j["left"], j["right"])] = Join(
-                j["left"], j["right"], j["cardinality"], keys
-            )
+            left, right = j["left"].lower(), j["right"].lower()
+            keys = [(a.lower(), b.lower()) for a, b in j.get("keys", [])]
+            m.joins[(left, right)] = Join(left, right, j["cardinality"], keys)
         return m

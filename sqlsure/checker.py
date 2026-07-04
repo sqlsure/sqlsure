@@ -59,11 +59,16 @@ class QueryFacts:
         return model.owner_of(column) or self.base
 
 
+def _n(s: str | None) -> str | None:
+    """Unquoted SQL identifiers are case-insensitive; models are lowercase."""
+    return s.lower() if s else s
+
+
 def _columns(node: exp.Expression, aliases: dict[str, str]) -> list[tuple[str | None, str]]:
     out = []
     for c in node.find_all(exp.Column):
-        tbl = aliases.get(c.table, c.table) if c.table else None
-        out.append((tbl or None, c.name))
+        tbl = aliases.get(_n(c.table), _n(c.table)) if c.table else None
+        out.append((tbl or None, _n(c.name)))
     return out
 
 
@@ -72,13 +77,13 @@ def _in_scope(node: exp.Expression, select: exp.Select) -> bool:
 
 
 def _scope_facts(select: exp.Select, cte_names: set[str]) -> QueryFacts:
-    aliases = {t.alias_or_name: t.name
+    aliases = {_n(t.alias_or_name): _n(t.name)
                for t in select.find_all(exp.Table) if _in_scope(t, select)}
 
     base = None
     frm = select.args.get("from_") or select.args.get("from")
     if frm is not None and isinstance(frm.this, exp.Table):
-        base = frm.this.name
+        base = _n(frm.this.name)
 
     # equality predicates in WHERE — old-style `FROM a, b WHERE a.id = b.id`
     # joins carry their key there instead of an ON clause
@@ -88,9 +93,9 @@ def _scope_facts(select: exp.Select, cte_names: set[str]) -> QueryFacts:
         for eq in where.find_all(exp.EQ):
             l, r = eq.this, eq.expression
             if isinstance(l, exp.Column) and isinstance(r, exp.Column):
-                lt = aliases.get(l.table, l.table) if l.table else None
-                rt = aliases.get(r.table, r.table) if r.table else None
-                where_pairs.append((lt, l.name, rt, r.name))
+                lt = aliases.get(_n(l.table), _n(l.table)) if l.table else None
+                rt = aliases.get(_n(r.table), _n(r.table)) if r.table else None
+                where_pairs.append((lt, _n(l.name), rt, _n(r.name)))
 
     joins: list[QueryJoin] = []
     for j in select.find_all(exp.Join):
@@ -102,15 +107,15 @@ def _scope_facts(select: exp.Select, cte_names: set[str]) -> QueryFacts:
             for eq in on.find_all(exp.EQ):
                 l, r = eq.this, eq.expression
                 if isinstance(l, exp.Column) and isinstance(r, exp.Column):
-                    pairs.append((l.name, r.name))
+                    pairs.append((_n(l.name), _n(r.name)))
         has_pred = on is not None or bool(j.args.get("using"))
         if not has_pred:
-            jt = j.this.name
+            jt = _n(j.this.name)
             for lt, lc, rt, rc in where_pairs:
                 if jt in (lt, rt) and lt != rt:
                     pairs.append((lc, rc))
                     has_pred = True
-        joins.append(QueryJoin(j.this.name, pairs, has_pred))
+        joins.append(QueryJoin(_n(j.this.name), pairs, has_pred))
 
     aggregates: list[Aggregate] = []
     for node in select.find_all(exp.AggFunc):
@@ -151,7 +156,7 @@ def _scope_facts(select: exp.Select, cte_names: set[str]) -> QueryFacts:
 def extract(sql: str, dialect: str | None = None) -> list[QueryFacts]:
     """One QueryFacts per SELECT scope (outer query, CTEs, subqueries)."""
     tree = sqlglot.parse_one(sql, read=dialect)
-    cte_names = {c.alias for c in tree.find_all(exp.CTE)}
+    cte_names = {_n(c.alias) for c in tree.find_all(exp.CTE)}
     return [_scope_facts(s, cte_names) for s in tree.find_all(exp.Select)]
 
 

@@ -109,6 +109,16 @@ expect("PHI selection flagged",
 expect("non-sensitive dim column fine",
        "SELECT p.patient_id FROM dim_patient p", set())
 
+# case-insensitivity: unquoted identifiers must match regardless of case
+expect("CamelCase SQL vs lowercase model — declared join passes",
+       "SELECT F.Cost FROM Fct_Encounters F "
+       "JOIN Dim_Patient P ON F.Patient_ID = P.Patient_ID",
+       set())
+expect("CamelCase fanout still caught",
+       "SELECT SUM(F.Cost) FROM Fct_Encounters F "
+       "JOIN Dim_Diagnosis D ON F.Encounter_ID = D.Encounter_ID",
+       {"FANOUT"})
+
 # introspection: rulebook from a live sqlite catalog
 import sqlite3  # noqa: E402
 
