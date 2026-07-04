@@ -21,3 +21,7 @@ build/
 
 # private strategy docs — never public
 private/
+
+# credentials never belong here
+*Recovery-Codes*
+PyPI-*
