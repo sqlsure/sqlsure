@@ -183,5 +183,42 @@ check_intro("introspect: to_dict round-trips",
             == INTRO.joins.keys())
 conn.close()
 
+# MetricFlow semantic_models -> rulebook
+from sqlsure.dbt_loader import apply_semantic_models  # noqa: E402
+
+MF = apply_semantic_models(SemanticModel(), [
+    {"model": "ref('orders')",
+     "entities": [{"name": "order", "type": "primary", "expr": "order_id"},
+                  {"name": "customer", "type": "foreign", "expr": "customer_id"}],
+     "measures": [{"name": "order_total", "agg": "sum"},
+                  {"name": "avg_price", "agg": "average"},
+                  {"name": "balance", "agg": "sum",
+                   "non_additive_dimension": {"name": "ordered_at"}}]},
+    {"model": "ref('customers')",
+     "entities": [{"name": "customer", "type": "primary", "expr": "customer_id"}],
+     "measures": [{"name": "lifetime_spend", "agg": "sum"}]},
+])
+check_intro("metricflow: primary entity becomes grain",
+            MF.tables["orders"].grain == ["order_id"])
+e = MF.edge("orders", "customers")
+check_intro("metricflow: foreign->primary entity match becomes edge",
+            e is not None and e.cardinality == "many_to_one"
+            and e.keys == [("customer_id", "customer_id")])
+check_intro("metricflow: agg types map to additivity",
+            MF.tables["orders"].measures["order_total"].additivity == "additive"
+            and MF.tables["orders"].measures["avg_price"].additivity == "non_additive"
+            and MF.tables["orders"].measures["balance"].additivity == "semi_additive"
+            and MF.tables["orders"].measures["balance"].semi_additive_over == "ordered_at")
+got = {v.rule for v in check(
+    "SELECT SUM(c.lifetime_spend) FROM customers c "
+    "JOIN orders o ON c.customer_id = o.customer_id", MF)}
+check_intro("metricflow: fanout caught from Semantic Layer declarations",
+            "FANOUT" in got)
+got = {v.rule for v in check(
+    "SELECT SUM(o.order_total) FROM customers c "
+    "JOIN orders o ON c.customer_id = o.customer_id", MF)}
+check_intro("metricflow: summing the many side is correctly allowed",
+            "FANOUT" not in got)
+
 print(f"\n{PASSED} passed, {FAILED} failed")
 sys.exit(1 if FAILED else 0)

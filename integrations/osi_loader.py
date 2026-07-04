@@ -22,7 +22,7 @@ import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from sqlsure.model import (  # noqa: E402
-    ADDITIVE, MANY_TO_ONE, NON_ADDITIVE, ONE_TO_MANY,
+    ADDITIVE, MANY_TO_MANY, MANY_TO_ONE, NON_ADDITIVE, ONE_TO_MANY, ONE_TO_ONE,
     Join, Measure, SemanticModel, Table,
 )
 
@@ -35,9 +35,61 @@ _SCALARS = {"string", "float", "integer", "boolean", "date", "datetime",
             "decimal", "number", "time", "timestamp"}
 
 
+def _load_core_spec(sm: dict, m: SemanticModel) -> None:
+    """OSI core-metadata shape: datasets with primary_key/unique_keys,
+    relationships with from/to + column lists (no declared multiplicity —
+    inferred from key uniqueness, as in live-catalog introspection)."""
+    uniques: dict[str, set[frozenset]] = {}
+    for ds in sm.get("datasets", []) or []:
+        name = ds["name"].lower()
+        pk = [c.lower() for c in ds.get("primary_key", []) or []]
+        m.tables.setdefault(name, Table(name)).grain = pk
+        u = {frozenset(pk)} if pk else set()
+        for uk in ds.get("unique_keys", []) or []:
+            u.add(frozenset(c.lower() for c in uk))
+        uniques[name] = u
+
+    for rel in sm.get("relationships", []) or []:
+        frm, to = (rel.get("from") or "").lower(), (rel.get("to") or "").lower()
+        fcols = [c.lower() for c in rel.get("from_columns", []) or []]
+        tcols = [c.lower() for c in rel.get("to_columns", []) or []]
+        if not (frm and to and fcols and len(fcols) == len(tcols)):
+            continue
+        to_unique = frozenset(tcols) in uniques.get(to, set())
+        from_unique = frozenset(fcols) in uniques.get(frm, set())
+        card = (ONE_TO_ONE if from_unique and to_unique
+                else MANY_TO_ONE if to_unique else MANY_TO_MANY)
+        keys = list(zip(fcols, tcols))
+        edge = m.joins.get((frm, to))
+        if edge:
+            for k in keys:
+                if k not in edge.keys:
+                    edge.keys.append(k)
+        else:
+            m.joins[(frm, to)] = Join(frm, to, card, keys)
+
+    for metric in sm.get("metrics", []) or []:
+        for d in (metric.get("expression", {}) or {}).get("dialects", []) or []:
+            g = _AGG.search(d.get("expression", "") or "")
+            if not g:
+                continue
+            func, tbl, col = g.group(1).upper(), g.group(2), g.group(3)
+            additivity = ADDITIVE if func in ("SUM", "COUNT") else NON_ADDITIVE
+            owner = (tbl or "").lower()
+            if owner and owner in m.tables:
+                m.tables[owner].measures.setdefault(
+                    col.lower(), Measure(col.lower(), additivity))
+            break
+
+
 def load_osi(path: str) -> SemanticModel:
     doc = yaml.safe_load(open(path))
     m = SemanticModel()
+
+    # OSI ships two example shapes: the ontology style (flights.yaml) and
+    # the core-metadata style (tpcds: semantic_model -> datasets)
+    for sm in doc.get("semantic_model", []) or []:
+        _load_core_spec(sm, m)
 
     entity_names = set()
     for item in doc.get("ontology", []) or []:
