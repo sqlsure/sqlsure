@@ -71,6 +71,30 @@ class SemanticModel:
                 return t.name
         return None
 
+    def to_dict(self) -> dict:
+        """Inverse of from_dict — export for review, editing, or storage."""
+        tables: dict = {}
+        for t in self.tables.values():
+            spec: dict = {}
+            if t.grain:
+                spec["grain"] = list(t.grain)
+            if t.measures:
+                spec["measures"] = {
+                    m.name: (m.additivity if m.semi_additive_over is None
+                             else {"additivity": m.additivity,
+                                   "semi_additive_over": m.semi_additive_over})
+                    for m in t.measures.values()}
+            if t.sensitive:
+                spec["sensitive"] = sorted(t.sensitive)
+            tables[t.name] = spec
+        return {
+            "tables": tables,
+            "joins": [{"left": j.left, "right": j.right,
+                       "cardinality": j.cardinality,
+                       "keys": [list(k) for k in j.keys]}
+                      for j in self.joins.values()],
+        }
+
     @classmethod
     def from_dict(cls, d: dict) -> "SemanticModel":
         m = cls()

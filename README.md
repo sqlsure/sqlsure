@@ -105,6 +105,17 @@ fine." Honest uncertainty is a feature.
 - **dbt** (works today): `manifest.json` or `schema.yml` — the tests teams
   already wrote become enforceable semantics, zero config
 - **Plain PK/FK declarations** (works today — powered the benchmark audits)
+- **The live database itself** (works today): no semantic layer at all?
+  `sqlsure.introspect` builds the rulebook from the catalog — SQLite
+  PRAGMAs or `information_schema` PK/FK (postgres/mysql). Introspecting
+  BIRD's own database files recovered 2 foreign keys missing from the
+  benchmark's published schema
+  ([bird-bench/mini_dev#37](https://github.com/bird-bench/mini_dev/issues/37))
+
+  ```python
+  from sqlsure.introspect import model_from_sqlite
+  model = model_from_sqlite("app.db")   # PK -> grain, FK -> join edges
+  ```
 - **Hand-written JSON** — [model.example.json](model.example.json)
 - Cube, Snowflake Semantic Views, OSI — adapters on the roadmap; the
   engine only ever sees one `SemanticModel`

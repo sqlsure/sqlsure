@@ -109,5 +109,69 @@ expect("PHI selection flagged",
 expect("non-sensitive dim column fine",
        "SELECT p.patient_id FROM dim_patient p", set())
 
+# introspection: rulebook from a live sqlite catalog
+import sqlite3  # noqa: E402
+
+from sqlsure.introspect import model_from_sqlite  # noqa: E402
+
+conn = sqlite3.connect(":memory:")
+conn.executescript("""
+CREATE TABLE customers (customer_id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE orders (
+  order_id INTEGER PRIMARY KEY,
+  customer_id INTEGER REFERENCES customers(customer_id),
+  total REAL);
+CREATE TABLE order_items (
+  item_id INTEGER PRIMARY KEY,
+  order_id INTEGER REFERENCES orders,          -- implicit-PK reference
+  qty INTEGER);
+CREATE TABLE order_profiles (                  -- 1:1 child of orders
+  order_id INTEGER PRIMARY KEY REFERENCES orders(order_id),
+  notes TEXT);
+CREATE TABLE messages (                        -- role-playing dim
+  msg_id INTEGER PRIMARY KEY,
+  sender_id INTEGER REFERENCES customers(customer_id),
+  recipient_id INTEGER REFERENCES customers(customer_id));
+""")
+INTRO = model_from_sqlite(conn)
+
+
+def check_intro(name, cond):
+    global PASSED, FAILED
+    if cond:
+        PASSED += 1
+        print(f"  ok  {name}")
+    else:
+        FAILED += 1
+        print(f"FAIL  {name}")
+
+
+check_intro("introspect: PK becomes grain",
+            INTRO.tables["orders"].grain == ["order_id"])
+e = INTRO.edge("orders", "customers")
+check_intro("introspect: FK becomes many-to-one edge",
+            e is not None and e.cardinality == "many_to_one"
+            and e.keys == [("customer_id", "customer_id")])
+e = INTRO.edge("order_items", "orders")
+check_intro("introspect: implicit-PK reference resolved",
+            e is not None and e.keys == [("order_id", "order_id")])
+e = INTRO.edge("order_profiles", "orders")
+check_intro("introspect: unique child key upgrades to one-to-one",
+            e is not None and e.cardinality == "one_to_one")
+e = INTRO.edge("messages", "customers")
+check_intro("introspect: role-playing FKs merge into one edge",
+            e is not None
+            and sorted(e.keys) == [("recipient_id", "customer_id"),
+                                   ("sender_id", "customer_id")])
+got = {v.rule for v in check(
+    "SELECT SUM(o.total) FROM orders o "
+    "JOIN order_items i ON o.order_id = i.order_id", INTRO, dialect="sqlite")}
+check_intro("introspect: fanout caught with zero-authoring rulebook",
+            "FANOUT" in got)
+check_intro("introspect: to_dict round-trips",
+            SemanticModel.from_dict(INTRO.to_dict()).joins.keys()
+            == INTRO.joins.keys())
+conn.close()
+
 print(f"\n{PASSED} passed, {FAILED} failed")
 sys.exit(1 if FAILED else 0)

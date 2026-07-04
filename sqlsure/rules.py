@@ -76,6 +76,19 @@ def fanout(facts: QueryFacts, model: SemanticModel) -> list[Violation]:
                     f"{agg.column} will be double-counted.",
                     f"Pre-aggregate {facts.base} to [{grain}] in a CTE before "
                     f"joining {fans}."))
+            elif m is None and owner == facts.base:
+                # additivity undeclared (e.g. rulebook introspected from
+                # PK/FK only) — the join still repeats base rows, so the
+                # sum is inflated whenever the column is a per-row amount
+                out.append(Violation(
+                    "FANOUT", "warning",
+                    f"SUM({agg.column}) after one-to-many join to {fans} — "
+                    f"{facts.base} rows repeat, so the sum is inflated if "
+                    f"{agg.column} is a per-row amount (additivity not "
+                    f"declared).",
+                    f"Pre-aggregate {facts.base} to [{grain}] in a CTE before "
+                    f"joining {fans}, or declare {agg.column}'s additivity "
+                    f"to make this check exact."))
     return out
 
 
