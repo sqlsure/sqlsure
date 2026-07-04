@@ -45,7 +45,15 @@
       "Bash(curl -s -o /dev/null -w \"http://sqlsure.ai        → %{http_code}\\\\n\" --max-time 15 \"http://sqlsure.ai/?cachebust=$\\(date +%s\\)\")",
       "Bash(curl -s -o /dev/null -w \"https://sqlsure.ai       → %{http_code} \" --max-time 15 \"https://sqlsure.ai/\")",
       "Bash(curl -s -o /dev/null -w \"http://www.sqlsure.ai    → %{http_code}\\\\n\" --max-time 15 \"http://www.sqlsure.ai/\")",
-      "Bash(curl -sI --max-time 15 http://sqlsure.ai/)"
+      "Bash(curl -sI --max-time 15 http://sqlsure.ai/)",
+      "Bash(curl -s -o /dev/null -w \"https://sqlsure.ai        → %{http_code}\\\\n\" --max-time 15 https://sqlsure.ai/)",
+      "Bash(curl -s -o /dev/null -w \"http→https redirect       → %{http_code}\\\\n\" --max-time 15 http://sqlsure.ai/)",
+      "Bash(curl -s --max-time 15 https://sqlsure.ai/)",
+      "Bash(curl -sv --max-time 15 https://sqlsure.ai/ -o /dev/null)",
+      "Bash(curl -sL --max-time 30 \"https://raw.githubusercontent.com/open-semantic-interchange/OSI/main/examples/flights.yaml\" -o /private/tmp/claude-501/-Users-tejusarora-aie-demo/86941770-a533-494f-b879-eced4c1e2e60/scratchpad/osi_flights.yaml)",
+      "Bash(curl -sL --max-time 30 \"https://raw.githubusercontent.com/open-semantic-interchange/OSI/main/core-spec/spec.yaml\" -o /private/tmp/claude-501/-Users-tejusarora-aie-demo/86941770-a533-494f-b879-eced4c1e2e60/scratchpad/osi_spec.yaml)",
+      "Bash(.venv/bin/python integrations/osi_loader.py /private/tmp/claude-501/-Users-tejusarora-aie-demo/86941770-a533-494f-b879-eced4c1e2e60/scratchpad/osi_flights.yaml)",
+      "Bash(curl -s --max-time 10 \"https://sqlsure.ai/blog/bird-benchmark-wrong-gold/\")"
     ],
     "deny": [
       "Read(.env)",
