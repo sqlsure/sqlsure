@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install sqlsure          # (once published; today: pip install git+<repo-url>)
+      - run: pip install sqlsure
       - run: python -m sqlsure.scan . --report sqlsure-report.md
       - run: python -m sqlsure.cli --model model.json changed_model.sql  # exit 1 blocks merge
 ```

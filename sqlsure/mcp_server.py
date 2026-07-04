@@ -15,7 +15,12 @@ from __future__ import annotations
 import argparse
 import json
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except ImportError:  # core install is dependency-light; MCP is an extra
+    raise SystemExit(
+        "The MCP server needs the `mcp` package: pip install \"sqlsure[mcp]\""
+    )
 
 from .checker import check
 from .model import SemanticModel
