@@ -117,7 +117,13 @@ fine." Honest uncertainty is a feature.
   model = model_from_sqlite("app.db")   # PK -> grain, FK -> join edges
   ```
 - **Hand-written JSON** — [model.example.json](model.example.json)
-- Cube, Snowflake Semantic Views, OSI — adapters on the roadmap; the
+- **OSI and WrenAI MDL** (working loaders in
+  [integrations/](integrations/)): [OSI](integrations/osi_loader.py)
+  demonstrated on the spec's published examples;
+  [WrenAI MDL](integrations/mdl_loader.py) demonstrated on WrenAI's own
+  shipped example manifest — `primaryKey` → grain, relationship
+  `joinType` + `condition` → join edges, cube measures → additivity
+- Cube, Snowflake Semantic Views — adapters on the roadmap; the
   engine only ever sees one `SemanticModel`
 
 ## Validated on
