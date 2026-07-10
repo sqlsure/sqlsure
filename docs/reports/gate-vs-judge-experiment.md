@@ -85,5 +85,5 @@ accuracy: 14/20 vs 18/20 bare. Root causes, both real and both fixed:
 ## Takeaway
 
 Same accuracy, three orders of magnitude less latency, and a guardrail
-bill of $0 instead of ~$0.05/query: for the checkable-by-lookup class of
+bill of $0 instead of ~$0.03/query: for the checkable-by-lookup class of
 SQL errors, spend tokens on ambiguity, not on arithmetic.
