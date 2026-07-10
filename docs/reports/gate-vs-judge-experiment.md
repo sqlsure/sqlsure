@@ -42,15 +42,16 @@ Main run: 24 questions whose gold SQL contains JOIN + SUM/COUNT/AVG
   intent; that is judgment work, not verification work.
 - **The judge's only rejections were false alarms.** Across both runs
   (44 checks total) the judge rejected 2 drafts — both were actually
-  correct. Verdict quality did not justify the spend: ~42k tokens and
-  ~$0.05–0.06 per check to change zero outcomes.
+  correct. Verdict quality did not justify the spend: ~22–23k guardrail
+  tokens and ~$0.03 per check (Haiku prices; a frontier-model judge costs
+  several times more) to change zero outcomes.
 - **The gate flagged 5/24 drafts** (3 FANOUT warnings on genuinely
   fan-out-shaped joins, 2 UNDECLARED_JOIN), all soft; the repair round
   never degraded a correct query (5/5 outcome-preserving). The check
   itself costs nothing and runs in under a millisecond.
-- Extrapolated to 10,000 agent queries/day: judge-per-query ≈ **$550/day**
-  at these rates; the deterministic gate ≈ **$0/day** plus repair tokens
-  only when something is actually flagged.
+- Extrapolated to 10,000 agent queries/day: judge-per-query ≈ **$300/day
+  (~$108k/yr)** at these measured Haiku rates; the deterministic gate ≈
+  **$0/day** plus repair tokens only when something is actually flagged.
 
 ## What the dry run caught (and why we publish it)
 
