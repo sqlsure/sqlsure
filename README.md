@@ -136,6 +136,8 @@ fine." Honest uncertainty is a feature.
 
 ## Learn more
 
+- [docs/EVIDENCE.md](docs/EVIDENCE.md) — what it does for you, every
+  claim linked to a rerunnable measurement
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how it physically works,
   ELI5 → god level, with real intermediate outputs
 - [docs/FOR-DUMMIES.md](docs/FOR-DUMMIES.md) — every concept from zero
