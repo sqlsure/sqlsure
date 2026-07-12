@@ -34,9 +34,19 @@ diagnoses**. V1 had two diagnoses, so after joining, V1's row appears twice:
 | V2 | Ben | $200 | fracture |
 
 Sum the cost column now and you get **$400 instead of $300**. The join
-"fanned out" — one row became two — and the money duplicated with it. This
-is the most expensive silent bug in analytics, and databases do not catch
-it, because nothing is *technically* wrong.
+"fanned out" — one row became two — and the money duplicated with it.
+
+**Important: nobody designed that doubled table, and it is not stored
+anywhere.** Both source tables are perfectly normalized — visits hold one
+fact per row, diagnoses hold one fact per row; a textbook schema. The
+doubled table is the *intermediate result the database engine builds in
+the middle of your query*, invisibly, whenever you join one-to-many. So
+this is not a bad-database-design problem you could fix upstream: any
+schema with a one-to-many relationship — which is every schema — produces
+this intermediate the moment a query joins across it and sums the "one"
+side. The design is fine; the *query* summed at the wrong moment. That's
+why it's the most expensive silent bug in analytics, and why databases do
+not catch it: nothing is *technically* wrong.
 
 ## 3. The vocabulary (five words, that's all)
 
