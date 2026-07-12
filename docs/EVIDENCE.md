@@ -48,6 +48,16 @@ the table.
   2 foreign keys missing from the benchmark's published schema
   ([bird-bench/mini_dev#37](https://github.com/bird-bench/mini_dev/issues/37)).
 
+## If you run a dimensional warehouse (the OLAP objection, tested)
+
+- **Zero false errors on all 99 TPC-DS queries** — the canonical
+  star-schema corpus, expert-written SQL, rulebook derived mechanically
+  from the spec ([tpcds-audit](reports/tpcds-audit.md)). The "a proper
+  OLAP design makes this moot" objection is now tested, not argued: the
+  checker stays quiet on correct dimensional SQL and still catches the
+  fan-out class where it occurs (fact-to-fact and shared-dimension joins
+  that no table design can pre-aggregate away).
+
 ## If you evaluate models or maintain benchmarks
 
 - **A second axis next to execution accuracy**: semantic pass rate

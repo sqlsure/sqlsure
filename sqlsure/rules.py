@@ -21,16 +21,56 @@ def rule(fn):
     return fn
 
 
+def _fk_targets(facts: QueryFacts, model: SemanticModel) -> dict:
+    """column name -> set of (table, pk column) it references via a declared
+    edge from any in-scope table. Two FK columns that co-reference the same
+    target are transitively equal — the shared-dimension join pattern."""
+    refs: dict = {}
+    for t in [facts.base, *(x.table for x in facts.joins)]:
+        if not t or t in facts.cte_names or t not in model.tables:
+            continue
+        for other in model.tables:
+            if other == t:
+                continue
+            edge = model.edge(t, other)
+            if edge and edge.cardinality == "many_to_one":
+                for fk, pk in edge.keys:
+                    refs.setdefault(fk, set()).add((other, pk))
+    return refs
+
+
+def _join_cardinality(facts: QueryFacts, model: SemanticModel, j) -> str | None:
+    """Cardinality of the relationship this join actually USES, judged by its
+    key columns — not by mere edge existence (dense schemas have several
+    edges per table pair). Direct edge match wins; two FKs co-referencing
+    the same dimension key (shared-FK join) is effectively many-to-many."""
+    if not j.on_pairs:
+        return None
+    used = {frozenset(p) for p in j.on_pairs}
+    for other in [facts.base, *(x.table for x in facts.joins)]:
+        if not other or other == j.table or other in facts.cte_names:
+            continue
+        edge = model.edge(other, j.table)
+        if edge and used & {frozenset(k) for k in edge.keys}:
+            return edge.cardinality
+    refs = _fk_targets(facts, model)
+    for a, b in j.on_pairs:
+        if refs.get(a, set()) & refs.get(b, set()):
+            return MANY_TO_MANY  # both sides fan around the shared dimension
+    return None
+
+
 def _fanout_joins(facts: QueryFacts, model: SemanticModel) -> list[str]:
-    """Joined tables that multiply the base table's rows."""
+    """Joined tables that multiply the running result's rows — judged by the
+    edge the join's own keys traverse, not by edge existence."""
     if not facts.base or facts.base in facts.cte_names:
         return []
     out = []
     for j in facts.joins:
         if j.table in facts.cte_names:
             continue  # CTE output shadowing a model name — grain unknown
-        edge = model.edge(facts.base, j.table)
-        if edge and edge.cardinality in (ONE_TO_MANY, MANY_TO_MANY):
+        card = _join_cardinality(facts, model, j)
+        if card in (ONE_TO_MANY, MANY_TO_MANY):
             out.append(j.table)
     return out
 
@@ -98,8 +138,12 @@ def chasm(facts: QueryFacts, model: SemanticModel) -> list[Violation]:
     fans = _fanout_joins(facts, model)
     if len(fans) < 2:
         return []
+    aggs = [a for a in facts.aggregates if not a.distinct]
+    if not aggs:
+        return []  # pure row selection (GROUP BY dedup) — multiplication is harmless
+    severity = "error" if any(a.func in ("SUM", "AVG") for a in aggs) else "warning"
     return [Violation(
-        "CHASM", "error",
+        "CHASM", severity,
         f"Multiple one-to-many joins ({fans}) from {facts.base} — row "
         f"multiplication is the product of both fan-outs; every aggregate in "
         f"this query is unreliable.",
@@ -191,7 +235,10 @@ def join_keys(facts: QueryFacts, model: SemanticModel) -> list[Violation]:
         if not declared:
             continue
         used = {frozenset(p) for p in j.on_pairs}
-        if not (declared & used):
+        refs = _fk_targets(facts, model)
+        transitive = any(refs.get(a, set()) & refs.get(b, set())
+                         for a, b in j.on_pairs)
+        if not (declared & used) and not transitive:
             exp_keys = "; ".join(
                 f"{e.left}->{e.right} on " +
                 ", ".join(f"{l} = {r}" for l, r in e.keys) for e in edges)
@@ -210,11 +257,16 @@ def undeclared_join(facts: QueryFacts, model: SemanticModel) -> list[Violation]:
     out = []
     for j in facts.joins:
         # only when both sides are known model tables — joins to CTEs or
-        # tables outside the model can't be judged (CTE names shadow models)
+        # tables outside the model can't be judged (CTE names shadow models).
+        # A join may key off ANY in-scope table (multi-hop), so only warn
+        # when NO in-scope table has a declared edge to the joined one.
+        others = [t for t in [facts.base, *(x.table for x in facts.joins)]
+                  if t and t != j.table and t in model.tables
+                  and t not in facts.cte_names]
         if (facts.base in model.tables and j.table in model.tables
                 and facts.base not in facts.cte_names
                 and j.table not in facts.cte_names
-                and model.edge(facts.base, j.table) is None):
+                and not any(model.edge(o, j.table) for o in others)):
             out.append(Violation(
                 "UNDECLARED_JOIN", "warning",
                 f"No declared relationship between {facts.base} and {j.table} — "
@@ -226,12 +278,30 @@ def undeclared_join(facts: QueryFacts, model: SemanticModel) -> list[Violation]:
 
 @rule
 def cross_join(facts: QueryFacts, model: SemanticModel) -> list[Violation]:
-    """Join with no predicate = cartesian product."""
-    return [Violation(
-        "CROSS_JOIN", "error",
-        f"Join to {j.table} has no join predicate — cartesian product.",
-        f"Add an ON clause using the declared keys for {j.table}.")
-        for j in facts.joins if not j.has_predicate]
+    """Join with no predicate = cartesian product. Softens to a warning when
+    the predicate may exist but is invisible to the rulebook (columns from
+    CTEs/derived tables, or unqualified columns no table is known to own)."""
+    out = []
+    for j in facts.joins:
+        if j.has_predicate:
+            continue
+        unverifiable = (facts.unresolved_where
+                        or j.table in facts.cte_names
+                        or (facts.base in facts.cte_names if facts.base else False))
+        if unverifiable:
+            out.append(Violation(
+                "CROSS_JOIN", "warning",
+                f"No join predicate visible for {j.table} — either a "
+                f"cartesian product, or the key involves columns the "
+                f"rulebook cannot attribute (CTE/derived).",
+                f"If intentional (scalar subquery), ignore; otherwise add an "
+                f"ON clause using the declared keys for {j.table}."))
+        else:
+            out.append(Violation(
+                "CROSS_JOIN", "error",
+                f"Join to {j.table} has no join predicate — cartesian product.",
+                f"Add an ON clause using the declared keys for {j.table}."))
+    return out
 
 
 @rule

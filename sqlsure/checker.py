@@ -49,6 +49,16 @@ class QueryFacts:
     group_by: list[tuple[str | None, str]]   # (resolved table, column)
     selected: list[tuple[str | None, str]]
     cte_names: set[str] = field(default_factory=set)
+    # every equality pair in WHERE, tables possibly None (unqualified columns
+    # — TPC-DS-style comma joins); resolved against the model in check()
+    where_pairs: list[tuple[str | None, str, str | None, str]] = field(default_factory=list)
+    # True when a WHERE equality had an unqualified column no in-scope table
+    # is known to own (CTE/derived columns) — join predicates may exist that
+    # the rulebook cannot see, so cross-join claims must soften
+    unresolved_where: bool = False
+
+    def tables_in_scope(self) -> list[str]:
+        return [t for t in [self.base, *(j.table for j in self.joins)] if t]
 
     def owner(self, model: SemanticModel, table: str | None, column: str) -> str | None:
         """Resolve which model table a column belongs to."""
@@ -56,7 +66,28 @@ class QueryFacts:
             return table
         if table:  # qualified to a CTE/unknown table — don't guess
             return None
-        return model.owner_of(column) or self.base
+        # unqualified: prefer the unique in-scope table known to own it
+        candidates = [t for t in self.tables_in_scope()
+                      if t in model.tables and column in _known_columns(model, t)]
+        if len(candidates) == 1:
+            return candidates[0]
+        return model.owner_of(column)
+
+
+def _known_columns(model: SemanticModel, table: str) -> set[str]:
+    """Every column the rulebook associates with `table` — grain, measures,
+    sensitive, and any join-key column on an edge touching it."""
+    t = model.tables.get(table)
+    if t is None:
+        return set()
+    cols = set(t.grain) | set(t.measures) | set(t.sensitive)
+    for (l, r), j in model.joins.items():
+        for lc, rc in j.keys:
+            if l == table:
+                cols.add(lc)
+            if r == table:
+                cols.add(rc)
+    return cols
 
 
 def _n(s: str | None) -> str | None:
@@ -150,7 +181,8 @@ def _scope_facts(select: exp.Select, cte_names: set[str]) -> QueryFacts:
     for e in getattr(select, "selects", []):
         selected.extend(_columns(e, aliases))
 
-    return QueryFacts(base, joins, aggregates, group_by, selected, cte_names)
+    return QueryFacts(base, joins, aggregates, group_by, selected, cte_names,
+                      where_pairs=where_pairs)
 
 
 def extract(sql: str, dialect: str | None = None) -> list[QueryFacts]:
@@ -160,12 +192,55 @@ def extract(sql: str, dialect: str | None = None) -> list[QueryFacts]:
     return [_scope_facts(s, cte_names) for s in tree.find_all(exp.Select)]
 
 
+def _resolve_comma_joins(facts: QueryFacts, model: SemanticModel) -> None:
+    """Old-style `FROM a, b WHERE x = y` joins with UNQUALIFIED columns
+    (TPC-DS style — column names globally unique) leave joins predicate-less
+    at extraction time, because resolving a bare column to a table needs the
+    rulebook. Do that resolution now: a pair joins tables A and B when each
+    side's column is known (grain/measure/sensitive/edge key) to exactly one
+    in-scope table."""
+    in_scope = [t for t in facts.tables_in_scope()
+                if t in model.tables and t not in facts.cte_names]
+    known = {t: _known_columns(model, t) for t in in_scope}
+
+    def resolve(tbl: str | None, col: str) -> str | None:
+        if tbl:
+            return tbl
+        cands = [t for t in in_scope if col in known[t]]
+        return cands[0] if len(cands) == 1 else None
+
+    for lt, lc, rt, rc in facts.where_pairs:
+        if (lt is None and resolve(lt, lc) is None) or \
+                (rt is None and resolve(rt, rc) is None):
+            facts.unresolved_where = True
+            break
+
+    for j in facts.joins:
+        if j.has_predicate:
+            continue
+        for lt, lc, rt, rc in facts.where_pairs:
+            a, b = resolve(lt, lc), resolve(rt, rc)
+            if a and a == b == j.table:
+                # self-join (two aliases of one table) — the pair IS the
+                # predicate, though key verification doesn't apply
+                j.has_predicate = True
+                continue
+            if a and b and a != b and j.table in (a, b):
+                pair = (lc, rc) if j.table == b else (rc, lc)
+                # orient as (other-side col, joined-table col)? rules compare
+                # unordered against edge keys; keep extraction convention
+                if (lc, rc) not in j.on_pairs and (rc, lc) not in j.on_pairs:
+                    j.on_pairs.append((lc, rc) if b == j.table else (rc, lc))
+                j.has_predicate = True
+
+
 def check(sql: str, model: SemanticModel, dialect: str | None = None) -> list[Violation]:
     """The inspector: returns [] if the query is semantically safe."""
     from .rules import RULES
     violations: list[Violation] = []
     seen: set[tuple[str, str]] = set()
     for facts in extract(sql, dialect=dialect):
+        _resolve_comma_joins(facts, model)
         for rule in RULES:
             for v in rule(facts, model):
                 key = (v.rule, v.message)

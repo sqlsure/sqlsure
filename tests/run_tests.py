@@ -119,6 +119,31 @@ expect("CamelCase fanout still caught",
        "JOIN Dim_Diagnosis D ON F.Encounter_ID = D.Encounter_ID",
        {"FANOUT"})
 
+# TPC-DS-style comma join with unqualified columns (names globally unique
+# per side — like ss_sold_date_sk = d_date_sk; same-name pairs are ambiguous
+# SQL and stay unresolved)
+DS_MODEL = SemanticModel.from_dict({
+    "tables": {"sales": {"grain": "sale_id", "measures": {"amount": "additive"}},
+               "dates": {"grain": "d_date_sk"}},
+    "joins": [{"left": "sales", "right": "dates", "cardinality": "many_to_one",
+               "keys": [["s_sold_date_sk", "d_date_sk"]]}]})
+got = {v.rule for v in check(
+    "SELECT SUM(amount) FROM sales, dates WHERE s_sold_date_sk = d_date_sk",
+    DS_MODEL)}
+if got == set():
+    PASSED += 1
+    print("  ok  unqualified comma join resolves via rulebook — no cross join")
+else:
+    FAILED += 1
+    print(f"FAIL  unqualified comma join: got {got}")
+got = {v.rule for v in check("SELECT SUM(amount) FROM sales, dates", DS_MODEL)}
+if "CROSS_JOIN" in got:
+    PASSED += 1
+    print("  ok  comma join without predicate still cross-join")
+else:
+    FAILED += 1
+    print(f"FAIL  predicate-less comma join: got {got}")
+
 # introspection: rulebook from a live sqlite catalog
 import sqlite3  # noqa: E402
 
