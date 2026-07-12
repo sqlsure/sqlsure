@@ -73,6 +73,9 @@ Vanna/WrenAI-style generators; a
 [semantic eval metric](integrations/eval_metric.py) scores NL2SQL output
 where execution-accuracy is blind.
 
+**Also available as an [Agent Skill](skills/sql-semantic-check/SKILL.md)** —
+a single SKILL.md your agent loads directly; no server process needed.
+
 ## The rules (v0.1)
 
 | Rule | Severity | Catches |
