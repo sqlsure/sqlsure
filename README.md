@@ -19,7 +19,10 @@ sqlsure does — deterministically, in 0.1 ms, before the query runs.
 > queries, 45 flags, zero false alarms** — including a BIRD dev gold answer
 > that is [provably wrong by 8×](docs/reports/bird-audit.md) from the exact
 > bug class sqlsure targets, and a schema defect
-> [now filed upstream](https://github.com/bird-bench/mini_dev/issues/37).
+> [reported upstream and since fixed](https://github.com/bird-bench/mini_dev/issues/37)
+> — BIRD's 2026 Mini-Dev release added exactly the two foreign keys we
+> reported, and its annotations now match the shipped databases on all 11
+> databases ([how we verified](benchmarks/verify_fk_annotations.py)).
 
 ## How it works
 
@@ -112,7 +115,8 @@ fine." Honest uncertainty is a feature.
   `sqlsure.introspect` builds the rulebook from the catalog — SQLite
   PRAGMAs or `information_schema` PK/FK (postgres/mysql). Introspecting
   BIRD's own database files recovered 2 foreign keys missing from the
-  benchmark's published schema
+  benchmark's published schema — reported upstream and fixed in BIRD's
+  2026 release
   ([bird-bench/mini_dev#37](https://github.com/bird-bench/mini_dev/issues/37))
 
   ```python

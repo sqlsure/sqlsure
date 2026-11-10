@@ -45,8 +45,13 @@ the table.
   ([MCP docs](MCP.md); registry: `io.github.sqlsure/sqlsure`).
 - **No rulebook? No problem**: `sqlsure.introspect` builds one from the
   live database catalog — and doing so on BIRD's own databases recovered
-  2 foreign keys missing from the benchmark's published schema
-  ([bird-bench/mini_dev#37](https://github.com/bird-bench/mini_dev/issues/37)).
+  2 foreign keys missing from the benchmark's published schema. Reported
+  upstream, **fixed in BIRD's 2026 Mini-Dev release**, and verified
+  mechanically: the new annotations declare 104 foreign keys across the 11
+  dev databases, matching the shipped databases exactly
+  ([issue #37](https://github.com/bird-bench/mini_dev/issues/37) ·
+  [verifier](../benchmarks/verify_fk_annotations.py) ·
+  [the story](https://sqlsure.ai/blog/benchmark-shipped-the-fix/)).
 
 ## If you run a dimensional warehouse (the OLAP objection, tested)
 
