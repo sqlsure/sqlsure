@@ -3,9 +3,16 @@
 Spider 2.0 hands models a schema per database in two in-repo artifacts:
 a `DDL.csv` of CREATE TABLE statements and one JSON per table (columns,
 types, descriptions, sample rows). Neither has a slot for a primary key
-or a foreign key, and the baselines that *do* look for them read with
-`.get("foreign_keys", [])` — so a schema with no relationships produces
-no error, just an empty join graph.
+or a foreign key.
+
+That omission is deliberate, not a defect: the maintainers state in
+xlang-ai/Spider2#6 and #91 that Spider 2.0 provides no primary or
+foreign keys, because the cloud warehouses it targets generally declare
+none, and that the SQLite portion was left the same way for consistency.
+This script does not report a bug. It measures the size of what the
+choice withholds — for the SQLite subset, the relationship structure is
+present in the .sqlite files the benchmark distributes — so the cost of
+that design can be discussed with numbers instead of impressions.
 
 This script measures two things, both from artifacts the benchmark ships:
 
